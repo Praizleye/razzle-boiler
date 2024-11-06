@@ -1,3 +1,4 @@
+// ! PWA lifecycle start
 const CACHE_NAME = "my-app-cache-v1";
 const urlsToCache = [
   "/", // Caches the root URL (typically the main HTML file)
@@ -42,27 +43,6 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// Push event - handle push notifications
-self.addEventListener("push", (event) => {
-  console.log("🚀 ~ self.addEventListener ~ event:", event);
-  let data = {};
-  if (event.data) {
-    try {
-      data = event.data.json();
-      console.log("🚀 ~ self.addEventListener ~ data:", data);
-    } catch (e) {
-      console.error("Error parsing push event data:", e);
-    }
-  }
-  self.registration.showNotification(data.title || "Default Title", {
-    body: data.body || "notified by Praise",
-    icon: data.icon || "https://avatar.iran.liara.run/public/boy",
-    data: {
-      url: data.link || "https://example.com",
-    },
-  });
-});
-
 // Activate event - clean up old caches
 self.addEventListener("activate", (event) => {
   const cacheWhitelist = [CACHE_NAME];
@@ -77,4 +57,30 @@ self.addEventListener("activate", (event) => {
       );
     })
   );
+});
+// ! PWA lifecycle end
+
+// Push event - handle push notifications
+self.addEventListener("push", (event) => {
+  console.log("🚀 ~ self.addEventListener ~ event:", event);
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+      console.log("🚀 ~ self.addEventListener ~ data:", data);
+    } catch (e) {
+      console.error("Error parsing push event data:", e);
+    }
+  }
+  self.registration.showNotification(data.title || "Default Title", {
+    body: `${data.body || "notified by Praise"}\n${
+      data.link || "https://example.com"
+    }`,
+    icon: data.icon || "https://avatar.iran.liara.run/public/boy",
+  });
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data.url));
 });
