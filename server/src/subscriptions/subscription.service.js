@@ -103,7 +103,18 @@ async function sendNotificationService(req, res, next) {
       payload,
       options,
     });
-    
+
+    // similarly you can decide to send the notifications without using the emit event and just push like this
+    webpush
+      .sendNotification(
+        payload.subscription,
+        JSON.stringify(payload.payload),
+        payload.options
+      )
+      .then(() => {
+        console.log("Notification sent successfully");
+      })
+      .catch((err) => console.log(err));
 
     successHandler(res, { value: req.body, message: "Notification sent" }, 200);
   } catch (error) {
