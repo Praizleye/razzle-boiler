@@ -13,17 +13,6 @@ const app = express();
 const corsOptionsDelegate = require("./src/config/config");
 
 app.use(cors(corsOptionsDelegate));
-// app.use(
-//   cors({
-//     origin: [
-//       "localhost:3000",
-//       "http://localhost:3000",
-//       "https://google.com",
-//       "https://expressjs.com",
-//     ],
-//     credentials: true,
-//   })
-// );
 // middlewares
 app.use(helmet()); // for security
 app.use(express.json()); // for parsing application/json
@@ -49,7 +38,6 @@ app.get("/ping", (req, res) => {
 });
 
 // routes are defined here
-app.use("/", require("./src/routes/root"));
 app.use("/api", userRoute);
 app.use("/api", require("./src/routes/subscribe.routes"));
 
@@ -66,23 +54,6 @@ app.all("*", (req, res, next) => {
     res.type("txt").send("404 Not Found");
   }
 });
-
-// generateVapidKeys();
-// app.get("/", (req, res) => {
-//   res.sendFile("src/views/index.html", { root: __dirname });
-// });
-
-// app.all("*", (req, res, next) => {
-//   res.status(404);
-//   if (req.accepts("html")) {
-//     // res.sendFile(path.join(__dirname, "src", "views", "error.html"));
-//     res.sendFile("src/views/error.html", { root: __dirname });
-//   } else if (req.accepts("json")) {
-//     res.json({ message: "404 Not Found" });
-//   } else {
-//     res.type("txt").send("404 Not Found");
-//   }
-// });
 
 // connect to mongodb
 mongoose

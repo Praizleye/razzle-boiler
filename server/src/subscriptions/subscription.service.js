@@ -6,7 +6,34 @@ const {
 } = require("../middleware/error-handler.middleware");
 const subscriptionSchema = require("./schema/save.subsription");
 const pushNotificationQueue = require("../queues/push-notification.queue");
+const webpush = require("web-push");
 
+// this is the web-push package that is used to send the push notifications
+// this details need be stored in the .env file
+// they also need to be generated using the generateVAPIDKeys function
+// they also need be set before sending the push notifications
+// how to generate vapids keys is shown in the readme.md file
+webpush.setVapidDetails(
+  "mailto:hello@homifiafrica.com",
+  "BBd9tZamPDyofPsgZRGJM2MV7BeLevdrI3VP5HIqUtEFGGCwCAxN48yYlmp0F-6Ltun0bxBpT4pAuZiMp_Q0U9E",
+  "joRti3rj2cwDTV03I_O-MfBbcyUnXOIxj11ZSNReBMk"
+);
+
+function sendWebPushNotification(payload) {
+  console.log("🚀 ~ sendWebPushNotification ~ payload: ~event", payload);
+  webpush
+    .sendNotification(
+      payload.subscription,
+      JSON.stringify(payload.payload),
+      payload.options
+    )
+    .then(() => {
+      console.log("Notification sent successfully");
+    })
+    .catch((err) => console.log(err));
+}
+
+// save the subscription to the database
 async function saveSubscription(req, res, next) {
   console.log("🚀 ~ saveSubscription ~ req:", req.body);
   try {
@@ -41,6 +68,7 @@ async function saveSubscription(req, res, next) {
   }
 }
 
+// get all the subscriptions for a user
 async function getUsersSubscriptions(req, res, next) {
   try {
     const subscription = await subscriptionSchema.find({
@@ -70,6 +98,7 @@ async function getUsersSubscriptions(req, res, next) {
   }
 }
 
+//
 async function sendNotificationService(req, res, next) {
   try {
     const subscriptions = await subscriptionSchema.findOne({
@@ -98,30 +127,26 @@ async function sendNotificationService(req, res, next) {
     const payload = { ...req.body.subscription };
     console.log("🚀 ~ sendNotificationService ~ payload:", payload);
 
-    emitEvent(eventTypes.SEND_PUSH_NOTIFICATION, {
+    // !this is using the emit event to send the notifications
+    // emitEvent(eventTypes.SEND_PUSH_NOTIFICATION, {
+    //   subscription: subscriptionObject,
+    //   payload,
+    //   options,
+    // });
+
+    //! similarly you can decide to send the notifications without using the emit event and just push like this
+    sendWebPushNotification({
       subscription: subscriptionObject,
       payload,
       options,
     });
-
-    // similarly you can decide to send the notifications without using the emit event and just push like this
-    webpush
-      .sendNotification(
-        payload.subscription,
-        JSON.stringify(payload.payload),
-        payload.options
-      )
-      .then(() => {
-        console.log("Notification sent successfully");
-      })
-      .catch((err) => console.log(err));
 
     successHandler(res, { value: req.body, message: "Notification sent" }, 200);
   } catch (error) {
     customErrorHandler(500, error?.message, next);
   }
 }
-
+// send bulk notifications to all the subscriptions
 async function sendBulkNotificationService(req, res, next) {
   try {
     const subscriptions = await subscriptionSchema.find({});
@@ -145,7 +170,7 @@ async function sendBulkNotificationService(req, res, next) {
     const subscriptionsObj = subscriptions.map((sub) => sub.subscription);
 
     // remove the _id property from the subscription object
-    // to avoid sending the _id property to the client
+    // to avoid sending the _id property to the weo-push as it will throw an error
 
     const refinedSubscriptions = subscriptionsObj.map((sub) => ({
       endpoint: sub.endpoint,
@@ -160,8 +185,20 @@ async function sendBulkNotificationService(req, res, next) {
     );
 
     // Add each subscription to the queue
+    // !this is using the queue to send the notifications
+    // refinedSubscriptions.forEach((subscription) => {
+    //   pushNotificationQueue.add({
+    //     subscription,
+    //     payload,
+    //     options,
+    //   });
+    // });
+
+    // !this is sending the notifications without using the queue
+    // just loop through the refinedSubscriptions and send the notifications
+    // there is enough computing power to handle the notifications and if there are many subscriptions we create another replica of the server
     refinedSubscriptions.forEach((subscription) => {
-      pushNotificationQueue.add({
+      sendWebPushNotification({
         subscription,
         payload,
         options,
