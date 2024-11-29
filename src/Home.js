@@ -9,31 +9,35 @@ const Home = () => {
     const publicKey =
       "BBd9tZamPDyofPsgZRGJM2MV7BeLevdrI3VP5HIqUtEFGGCwCAxN48yYlmp0F-6Ltun0bxBpT4pAuZiMp_Q0U9E";
 
-    if ("serviceWorker" in navigator && "PushManager" in window) {
-      try {
-        const registration = await navigator.serviceWorker.register("/sw.js");
-        // console.log("🚀 ~ subscribeUser ~ registration:", registration);
+    if ("serviceWorker" in navigator) {
+      if ("PushManager" in window) {
         try {
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicKey),
-          });
+          const registration = await navigator.serviceWorker.register("/sw.js");
+          // console.log("🚀 ~ subscribeUser ~ registration:", registration);
+          try {
+            const subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(publicKey),
+            });
 
-          // console.log("🚀 ~ subscribeUser ~ subscription:", subscription);
+            // console.log("🚀 ~ subscribeUser ~ subscription:", subscription);
 
-          await fetch("http://localhost:8475/api/subscribe", {
-            method: "POST",
-            body: JSON.stringify({ subscription }), //you can pass meta data here
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          });
-        } catch (subscriptionError) {
-          console.error("Error during push subscription:", subscriptionError);
+            await fetch("http://localhost:8475/api/subscribe", {
+              method: "POST",
+              body: JSON.stringify({ subscription }), //you can pass meta data here
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            });
+          } catch (subscriptionError) {
+            console.error("Error during push subscription:", subscriptionError);
+          }
+        } catch (error) {
+          console.error("Error during service worker registration:", error);
         }
-      } catch (error) {
-        console.error("Error during service worker registration:", error);
+      } else {
+        console.warn("PushManager is not available in this browser.");
       }
     }
   };
