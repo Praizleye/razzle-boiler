@@ -38,6 +38,7 @@ const Home = () => {
         }
       } else {
         console.warn("PushManager is not available in this browser.");
+        alert("PushManager is not available in this browser.");
       }
     }
   };
